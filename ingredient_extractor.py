@@ -5,12 +5,15 @@ Processes a messy base document with multiple ingredients and creates standardiz
 single-ingredient documents with consistent table structure.
 """
 
+import os
 import re
 import unicodedata
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from docx import Document
+from docx2pdf import convert
+
 
 
 class IngredientExtractor:
@@ -308,17 +311,17 @@ class IngredientExtractor:
 
     def _extract_table_value(self, row_data: List[str], column: int) -> str:
 
-         # ile jest niepustych wartości po etykiecie
+         # how many non-empty values are there in the row after the label
         values = [c.strip() for c in row_data[1:] if c.strip()]
 
         if not values:
             return ""
 
-        # tylko jedna wartość -> wspólna dla wszystkich
+        # one value -> common for all
         if len(values) == 1:
             return values[0]
 
-        # wiele wartości -> wybierz kolumnę składnika
+        # multiple values -> use the one in the same column as the ingredient name
         if column < len(row_data):
             return row_data[column].strip()
 
@@ -364,7 +367,11 @@ class IngredientExtractor:
 
             try:
                 new_doc.save(str(output_path))
-                print(f"    ✓ Saved: {output_path}")
+                pdf_path = output_path.with_suffix(".pdf")
+                convert(str(output_path), str(pdf_path))
+                print(f"✓ Saved:")
+                print(f"   DOCX: {output_path}")
+                print(f"   PDF : {pdf_path}")
             except Exception as exc:
                 print(f"    ✗ Error saving {output_filename}: {str(exc)}")
 
@@ -394,11 +401,16 @@ class IngredientExtractor:
 def main() -> None:
     """Main execution function."""
 
+    import sys
+
     template_doc = "00_WZÓR.docx"
 
-    repo_root = Path(__file__).resolve().parent
+    if getattr(sys, 'frozen', False):
+        repo_root = Path(sys.executable).resolve().parent
+    else:
+        repo_root = Path(__file__).resolve().parent
 
-    # Znajdź szablon
+    os.chdir(repo_root)
     template_path = repo_root / template_doc
 
     if not template_path.exists():
