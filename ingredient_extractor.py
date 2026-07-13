@@ -14,8 +14,6 @@ from typing import Any, Dict, List, Optional
 from docx import Document
 from docx2pdf import convert
 
-
-
 class IngredientExtractor:
     """Extracts ingredient data from a Word document."""
 
